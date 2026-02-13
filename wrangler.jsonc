@@ -1,28 +1,32 @@
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "openalex-content-api",
+	"name": "openalex-content-worker",
+	"account_id": "a452eddbbe06eb7d02f4879cee70d29c",
 	"main": "src/index.ts",
-	"compatibility_date": "2025-09-22",
+	"compatibility_date": "2025-01-15",
+	"compatibility_flags": ["nodejs_compat"],
+	"workers_dev": true,
 	"observability": {
 		"enabled": true
+	},
+	"vars": {
+		"CF_ACCOUNT_ID": "a452eddbbe06eb7d02f4879cee70d29c"
 	},
 	"r2_buckets": [
 		{
 			"binding": "PDFS",
-			"bucket_name": "openalex-pdfs",
-			"preview_bucket_name": "openalex-pdfs-dev"
+			"bucket_name": "openalex-pdfs"
 		},
 		{
 			"binding": "GROBID_XML",
-			"bucket_name": "openalex-grobid-xml",
-			"preview_bucket_name": "openalex-grobid-xml-dev"
+			"bucket_name": "openalex-grobid-xml"
 		}
 	],
 	"d1_databases": [
 		{
-			"binding": "openalex_db",
-			"database_name": "openalex-db",
-			"database_id": "769bdd92-0544-4135-b2e4-c67f1df17994"
+			"binding": "CONTENT_INDEX",
+			"database_name": "openalex-content-index",
+			"database_id": "c2e1cc17-1810-400b-a7c8-c5103ab366de"
 		}
 	]
 }

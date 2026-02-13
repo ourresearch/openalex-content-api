@@ -1,23 +1,23 @@
 {
-	"name": "openalex-content-api",
-	"version": "0.0.0",
-	"private": true,
-	"scripts": {
-		"deploy": "wrangler deploy",
-		"dev": "wrangler dev",
-		"start": "wrangler dev",
-		"test": "vitest",
-		"cf-typegen": "wrangler types"
-	},
-	"devDependencies": {
-		"@cloudflare/vitest-pool-workers": "^0.8.19",
-		"typescript": "^5.5.2",
-		"vitest": "~3.2.0",
-		"wrangler": "^4.38.0"
-	},
-	"dependencies": {
-		"@aws-sdk/client-dynamodb": "^3.894.0",
-		"@aws-sdk/util-dynamodb": "^3.894.0",
-		"aws4fetch": "^1.0.20"
-	}
+  "name": "openalex-content-worker",
+  "version": "1.0.0",
+  "description": "OpenAlex Content API - PDFs and Grobid XML downloads",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": ["openalex", "cloudflare-workers", "r2"],
+  "author": "OpenAlex",
+  "license": "MIT",
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260120.0",
+    "@types/node": "^25.0.9",
+    "typescript": "^5.9.3",
+    "wrangler": "^4.59.3"
+  },
+  "dependencies": {
+    "aws4fetch": "^1.0.20"
+  }
 }
