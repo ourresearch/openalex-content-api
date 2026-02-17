@@ -1,5 +1,6 @@
 import type { Env } from "./types";
 import { handleSingleWork } from "./singleWork";
+import { handleChangefile } from "./changefiles";
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -22,6 +23,12 @@ export default {
       return handleSingleWork(request, env, workId, format);
     }
 
+    // Route: GET /changefiles/{date}/{filename}
+    const changefileMatch = path.match(/^\/changefiles\/([^/]+)\/([^/]+)$/);
+    if (changefileMatch) {
+      return handleChangefile(request, env, changefileMatch[1], changefileMatch[2]);
+    }
+
     // No extension = redirect to .pdf
     const noExtMatch = path.match(/^\/works\/([^.\/]+)\/?$/);
     if (noExtMatch) {
@@ -41,12 +48,21 @@ export default {
     if (path === "/" || path === "") {
       return Response.json({
         name: "OpenAlex Content",
-        description: "Download PDFs and TEI XML for OpenAlex works",
-        usage: "content.openalex.org/works/{work_id}.{format}",
-        formats: ["pdf", "grobid-xml"],
-        note: "Omitting the extension defaults to .pdf",
-        example: "content.openalex.org/works/W2741809807.pdf",
-        credits: 100,
+        description: "Download PDFs, TEI XML, and daily change files for OpenAlex",
+        endpoints: {
+          works: {
+            usage: "content.openalex.org/works/{work_id}.{format}",
+            formats: ["pdf", "grobid-xml"],
+            note: "Omitting the extension defaults to .pdf",
+            example: "content.openalex.org/works/W2741809807.pdf",
+            credits: 100,
+          },
+          changefiles: {
+            usage: "content.openalex.org/changefiles/{date}/{filename}",
+            formats: ["jsonl.gz", "parquet"],
+            example: "content.openalex.org/changefiles/2026-02-16/works_2026-02-16.jsonl.gz",
+          },
+        },
         api_key: "Required (header or ?api_key=)"
       }, { headers: { "X-Credits-Cost": "0" } });
     }
