@@ -53,9 +53,9 @@ function objectHeaders(
 ): Headers {
   const headers = new Headers();
   obj.writeHttpMetadata(headers);
-  if (!headers.has("Content-Type")) {
-    headers.set("Content-Type", CONTENT_TYPES[format]);
-  }
+  // Objects were uploaded with content-type binary/octet-stream; serve the
+  // real type now that the response is ours (the old presigned URLs couldn't).
+  headers.set("Content-Type", CONTENT_TYPES[format]);
   headers.set("ETag", obj.httpEtag);
   headers.set("Accept-Ranges", "bytes");
   headers.set(
