@@ -44,6 +44,17 @@ export default {
       });
     }
 
+    // robots.txt — must be a real 200 text/plain: robots-respecting clients
+    // check it before downloading, and a 4xx here reads as "blocked"
+    if (path === "/robots.txt") {
+      return new Response("User-agent: *\nAllow: /\n", {
+        headers: {
+          "Content-Type": "text/plain; charset=utf-8",
+          "X-Credits-Cost": "0",
+        },
+      });
+    }
+
     // Root endpoint - API documentation
     if (path === "/" || path === "") {
       return Response.json({
@@ -54,7 +65,7 @@ export default {
             usage: "content.openalex.org/works/{work_id}.{format}",
             formats: ["pdf", "grobid-xml"],
             note: "Omitting the extension defaults to .pdf",
-            example: "content.openalex.org/works/W2741809807.pdf",
+            example: "content.openalex.org/works/W3038568908.pdf",
             credits: 100,
           },
           changefiles: {
