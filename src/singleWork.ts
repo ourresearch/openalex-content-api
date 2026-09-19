@@ -33,11 +33,29 @@ async function lookupWork(env: Env, workId: number): Promise<ContentRecord | nul
 
 const CONTENT_TYPES: Record<"pdf" | "grobid-xml", string> = {
   pdf: "application/pdf",
-  "grobid-xml": "application/gzip",
+  "grobid-xml": "application/xml; charset=utf-8",
 };
 
 function downloadFilename(workId: number, format: "pdf" | "grobid-xml"): string {
-  return format === "pdf" ? `W${workId}.pdf` : `W${workId}.grobid.xml.gz`;
+  return format === "pdf" ? `W${workId}.pdf` : `W${workId}.grobid.xml`;
+}
+
+/**
+ * Grobid TEI is stored gzipped in R2 ({uuid}.xml.gz). We stream those bytes
+ * as-is but describe them as XML delivered with gzip *transfer* encoding, so
+ * standard clients (requests, httpx, fetch, browsers, curl --compressed)
+ * decompress transparently and a `.grobid-xml` URL yields XML. Any Response
+ * carrying these headers MUST be built with `encodeBody: "manual"`, otherwise
+ * the Workers runtime gzips the already-gzipped body a second time.
+ */
+const STORED_ENCODING: Partial<Record<"pdf" | "grobid-xml", string>> = {
+  "grobid-xml": "gzip",
+};
+
+function bodyInit(format: "pdf" | "grobid-xml", status: number, headers: Headers): ResponseInit {
+  return STORED_ENCODING[format]
+    ? { status, headers, encodeBody: "manual" }
+    : { status, headers };
 }
 
 /**
@@ -56,8 +74,19 @@ function objectHeaders(
   // Objects were uploaded with content-type binary/octet-stream; serve the
   // real type now that the response is ours (the old presigned URLs couldn't).
   headers.set("Content-Type", CONTENT_TYPES[format]);
+  const encoding = STORED_ENCODING[format];
+  if (encoding) {
+    headers.set("Content-Encoding", encoding);
+  } else {
+    headers.delete("Content-Encoding");
+  }
   headers.set("ETag", obj.httpEtag);
-  headers.set("Accept-Ranges", "bytes");
+  // Byte ranges are only offered on formats served as stored. For gzip-encoded
+  // formats the edge may decode the body for clients that don't accept gzip,
+  // and a range of the encoded bytes then decodes to nothing.
+  if (!encoding) {
+    headers.set("Accept-Ranges", "bytes");
+  }
   headers.set(
     "Content-Disposition",
     `attachment; filename="${downloadFilename(workId, format)}"`
@@ -81,7 +110,8 @@ function missingObjectResponse(workId: number, format: "pdf" | "grobid-xml"): Re
  * Handle a single work content request.
  *
  * GET /works/{work_id}.pdf → stream the PDF from R2
- * GET /works/{work_id}.grobid-xml → stream the Grobid XML (gzipped) from R2
+ * GET /works/{work_id}.grobid-xml → stream the Grobid TEI XML from R2
+ *   (stored gzipped; served as application/xml + Content-Encoding: gzip)
  *
  * Files are served directly from the R2 bindings rather than via a 302 to a
  * presigned *.r2.cloudflarestorage.com URL. The cross-host redirect broke
@@ -140,7 +170,7 @@ export async function handleSingleWork(
     return new Response(null, { status: 200, headers });
   }
 
-  const rangeRequested = request.headers.has("range");
+  const rangeRequested = request.headers.has("range") && !STORED_ENCODING[format];
   let obj: R2ObjectBody | null;
   try {
     // Passing the request Headers lets R2 parse the Range header itself
@@ -181,10 +211,10 @@ export async function handleSingleWork(
     }
     headers.set("Content-Range", `bytes ${offset}-${offset + length - 1}/${obj.size}`);
     headers.set("Content-Length", length.toString());
-    return new Response(obj.body, { status: 206, headers });
+    return new Response(obj.body, bodyInit(format, 206, headers));
   }
 
   headers.set("Content-Length", obj.size.toString());
   // Stream the body through; never buffer it.
-  return new Response(obj.body, { status: 200, headers });
+  return new Response(obj.body, bodyInit(format, 200, headers));
 }
