@@ -1,4 +1,5 @@
 import type { Env, ContentRecord } from "./types";
+import { reportError } from "./sentry";
 
 /**
  * Parse and validate a work ID from the URL path.
@@ -97,6 +98,10 @@ function objectHeaders(
 
 /** The content index says the file exists but the bucket disagrees. */
 function missingObjectResponse(workId: number, format: "pdf" | "grobid-xml"): Response {
+  // ~160 a day (oxjob #1685): a real data fault (D1 never clears removed content), so it goes to Sentry too.
+  reportError(new Error(`content index points at a ${format} missing from storage`), {
+    site: "missing_object", extra: { work_id: `W${workId}`, format },
+  });
   return Response.json(
     {
       error: `The ${format} for this work is in the content index but missing from storage`,
