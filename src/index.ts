@@ -1,8 +1,9 @@
 import type { Env } from "./types";
 import { handleSingleWork } from "./singleWork";
 import { handleChangefile } from "./changefiles";
+import { withErrorReporting } from "./sentry";
 
-export default {
+const handler = {
   async fetch(request: Request, env: Env): Promise<Response> {
     // Only allow GET and HEAD requests
     if (request.method !== "GET" && request.method !== "HEAD") {
@@ -83,6 +84,15 @@ export default {
       { error: "Not found", path },
       { status: 404, headers: { "X-Credits-Cost": "0" } }
     );
+  },
+};
+
+// Sentry (oxjob #1685): reports an exception that escapes the handler (D1 "overloaded" and timeouts, ~690 a day),
+// then rethrows it unchanged.
+export default {
+  fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+    return withErrorReporting({ env, waitUntil: (p) => ctx.waitUntil(p), request }, "fetch",
+      () => handler.fetch(request, env));
   },
 };
 

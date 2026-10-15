@@ -18,6 +18,8 @@
     "wrangler": "^4.59.3"
   },
   "dependencies": {
+    "@sentry/cloudflare": "10.76.2",
+    "@sentry/core": "10.76.2",
     "aws4fetch": "^1.0.20"
   }
 }

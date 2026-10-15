@@ -1,4 +1,6 @@
-export interface Env {
+import type { SentryEnv } from "./sentry";
+
+export interface Env extends SentryEnv {
   // R2 buckets
   PDFS: R2Bucket;
   GROBID_XML: R2Bucket;
